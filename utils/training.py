@@ -1,6 +1,6 @@
 import torch
 
-def train(model, loader, optimizer, criterion, device, print_every=1000):
+def train(model, loader, optimizer, criterion, device, print_every=500):
     model.train()
     running_loss = 0.0
     total_samples = 0
