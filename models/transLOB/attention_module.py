@@ -20,6 +20,12 @@ class LOBTransformerBlock(nn.Module):
         ffn_output = self.ffn(x)
         x = self.norm2(x + ffn_output)
         return x
+    
+    def _generate_causal_mask(self, x):
+        seq_len = x.size(1)
+        mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device), diagonal=1).bool()
+        return mask
+
 
     # def forward(self, x):
     #     attn_out = self.attention(x)
@@ -28,11 +34,6 @@ class LOBTransformerBlock(nn.Module):
     #     x = self.norm2(x + self.dropout(ff_out))
     #     return x
 
-    
-    def _generate_causal_mask(self, x):
-        seq_len = x.size(1)
-        mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device), diagonal=1).bool()
-        return mask
 
         
 # class MultiHeadSelfAttention(nn.Module):

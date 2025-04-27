@@ -22,6 +22,8 @@ class LOBFeatureExtractor(nn.Module):
         return F.pad(x, (padding, 0))
 
     def forward(self, x):
+        x = x.permute(0, 2, 1)
+        
         x = self.causal_pad(x, dilation=1)
         x = F.relu(self.conv1(x))
 
@@ -36,4 +38,6 @@ class LOBFeatureExtractor(nn.Module):
 
         x = self.causal_pad(x, dilation=16)
         x = F.relu(self.conv5(x))
+
+        x = x.permute(0, 2, 1)
         return x
