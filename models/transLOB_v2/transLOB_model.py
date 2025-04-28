@@ -12,7 +12,7 @@ class TransLOB(nn.Module):
         self.layer_norm = nn.LayerNorm(hidden_channels)
         self.position_encoding = LOBPositionalEncoding()
         self.input_projection = nn.Linear(hidden_channels + 1, d_model)
-        self.transformer_block = LOBTransformerBlock(d_model, num_heads=3)
+        self.transformer_block = LOBTransformerBlock(d_model, num_heads)
         self.fc_out = nn.Sequential(
             nn.Linear(d_model, 64),
             nn.ReLU(),
