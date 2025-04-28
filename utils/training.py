@@ -23,7 +23,7 @@ def train(model, loader, optimizer, criterion, device, print_every=500):
         correct += c
 
         if i % print_every == 0:
-            print(f"[Batch {i}/{len(loader)}] Train Loss: {loss.item():.4f} | Train Accuracy: {c/y_batch.size(0):.2f}")
+            print(f"[Batch {i}/{len(loader)}] Train Loss: {loss.item():.4f} | Train Accuracy: {c/y_batch.size(0):.4f}")
                     
     avg_loss = running_loss / len(loader.dataset)
     avg_accuracy = correct / total
