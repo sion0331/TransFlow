@@ -3,6 +3,9 @@ import sys
 import numpy as np
 import torch
 
+"""
+Adjusted get_item to handle different X shape - (b,1,T,feature_size) or (b,T,feature_size) depending on type of model (deepLOB vs transLOB)
+"""
 
 def __get_raw__(auction, normalization, day):
     """
@@ -107,7 +110,7 @@ def __data_processing__(x, y, T, k):
 
 
 class Dataset_fi2010:
-    def __init__(self, auction, normalization, stock_idx, days, T, k, lighten):
+    def __init__(self, auction, normalization, stock_idx, days, T, k, lighten, mode):
         """ Initialization """
         self.auction = auction
         self.normalization = normalization
@@ -116,13 +119,17 @@ class Dataset_fi2010:
         self.T = T
         self.k = k
         self.lighten = lighten
+        self.mode = mode
 
-        x, y = self.__init_dataset__()
-        # x = torch.from_numpy(x)
-        self.x = torch.from_numpy(x) #### torch.unsqueeze(x, 1)
-        self.y = torch.from_numpy(y)
+        self.x, self.y = self.__init_dataset__()
+        # if self.mode == 'deeplob':
+        #     x = torch.from_numpy(x)
+        #     self.x = torch.unsqueeze(x, 1)
+        # else:
+        #     self.x = torch.from_numpy(x)
+        # self.y = torch.from_numpy(y)
 
-        self.length = len(y)
+        self.length = len(self.y)
 
     def __init_dataset__(self):
         x_cat = np.array([])
@@ -149,7 +156,13 @@ class Dataset_fi2010:
 
     def __getitem__(self, index):
         """Generates samples of data"""
-        return self.x[index], self.y[index]
+        x_tensor = torch.from_numpy(self.x[index]).float()  # shape [T, D]
+        if self.mode == 'deeplob':
+            x_tensor = x_tensor.unsqueeze(0)  # → [1, T, D]
+        y_tensor = torch.tensor(self.y[index]).long()
+        return x_tensor, y_tensor
+        
+        # return self.x[index].float(), self.y[index].int()
 
     def get_midprice(self):
         return []
