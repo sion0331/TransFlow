@@ -16,6 +16,8 @@ class TransLOB(nn.Module):
         # self.input_projection = nn.Linear(hidden_channels *2 + 1, d_model)
         self.transformer_block1 = LOBTransformerBlock(d_model, num_heads)
         self.transformer_block2 = LOBTransformerBlock(d_model, num_heads)
+        # self.transformer_block3 = LOBTransformerBlock(d_model, num_heads)
+        # self.transformer_block4 = LOBTransformerBlock(d_model, num_heads)
         self.fc_out = nn.Sequential(
             nn.Linear(d_model, 64),
             nn.ReLU(),
@@ -30,6 +32,8 @@ class TransLOB(nn.Module):
         x = self.input_projection(x)              # (b, 100, 64)
         x = self.transformer_block1(x)             # (b, 100, 15)
         x = self.transformer_block2(x)             # (b, 100, 15)
+        # x = self.transformer_block3(x)             # (b, 100, 15)
+        # x = self.transformer_block4(x)             # (b, 100, 15)
         x = x[:, -1, :]                           # (b, 64)
         x = self.fc_out(x)                        # (b, 3)
         return x
