@@ -43,7 +43,7 @@ def __get_raw__(auction, normalization, day):
         day = day - 1
         filename = f"Test_Dst_{path1}_{normalization}_CF_{str(day)}.txt"
 
-    print(root_path, dataset_path, path1, path2, path3, filename)
+    # print(root_path, dataset_path, path1, path2, path3, filename)
     file_path = os.path.join(root_path, dataset_path, path1, path2, path3, filename)
     fi2010_dataset = np.loadtxt(file_path)
     return fi2010_dataset
@@ -118,8 +118,8 @@ class Dataset_fi2010:
         self.lighten = lighten
 
         x, y = self.__init_dataset__()
-        x = torch.from_numpy(x)
-        self.x = torch.unsqueeze(x, 1)
+        # x = torch.from_numpy(x)
+        self.x = torch.from_numpy(x) #### torch.unsqueeze(x, 1)
         self.y = torch.from_numpy(y)
 
         self.length = len(y)
