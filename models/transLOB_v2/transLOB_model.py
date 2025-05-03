@@ -10,9 +10,12 @@ class TransLOB(nn.Module):
         super().__init__()
         self.feature_extractor = LOBFeatureExtractor(num_features, hidden_channels)
         self.layer_norm = nn.LayerNorm(hidden_channels)
+        # self.layer_norm = nn.LayerNorm(hidden_channels * 2, hidden_channels*2)
         self.position_encoding = LOBPositionalEncoding()
         self.input_projection = nn.Linear(hidden_channels + 1, d_model)
-        self.transformer_block = LOBTransformerBlock(d_model, num_heads)
+        # self.input_projection = nn.Linear(hidden_channels *2 + 1, d_model)
+        self.transformer_block1 = LOBTransformerBlock(d_model, num_heads)
+        self.transformer_block2 = LOBTransformerBlock(d_model, num_heads)
         self.fc_out = nn.Sequential(
             nn.Linear(d_model, 64),
             nn.ReLU(),
@@ -25,9 +28,8 @@ class TransLOB(nn.Module):
         x = self.layer_norm(x)                    # (b, 100, 14)
         x = self.position_encoding(x)             # (b, 100, 15)
         x = self.input_projection(x)              # (b, 100, 64)
-        x = self.transformer_block(x)             # (b, 100, 15)
-        x = self.transformer_block(x)             # (b, 100, 15)
+        x = self.transformer_block1(x)             # (b, 100, 15)
+        x = self.transformer_block2(x)             # (b, 100, 15)
         x = x[:, -1, :]                           # (b, 64)
         x = self.fc_out(x)                        # (b, 3)
         return x
-        
