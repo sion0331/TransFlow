@@ -25,40 +25,51 @@ def generate_labels(df, horizons, alpha=0.002):
     df = pd.concat([df, df_labels], axis=1)
     return df
 
+def add_features(df):
+    midpoint = df['midpoint']
+    df['midpoint_delta'] = (midpoint - midpoint.shift(1)) / midpoint.shift(1)
+    df = df.dropna()
+    return df
+    
 def normalize_features(df, window_size=1000):
     distance_features = [col for col in df.columns if "distance" in col]
-    notional_features = [col for col in df.columns if "notional" in col]
+    market_notional_features = [col for col in df.columns if "market_notional" in col]
+    notional_features = [col for col in df.columns if "notional" in col and col not in market_notional_features]
 
-    # Convert distance % to absolute price
-    df[distance_features] = df[distance_features].add(1).mul(df['midpoint'], axis=0)
+    # df[distance_features] = df[distance_features].add(1).mul(df['midpoint'], axis=0) # Convert distance % to absolute price
 
-    ###
-    midpoint_mean = df['midpoint'].rolling(window=window_size, min_periods=1).mean()
-    midpoint_std = df['midpoint'].rolling(window=window_size, min_periods=1).std()
-    # df[distance_features] = (df[distance_features].sub(midpoint_mean, axis=0)) / midpoint_std
+    ### Dec Pre
+    max_abs = df['bids_distance_4'].abs().max()
+    power = np.floor(np.log10(max_abs))
+    for col in distance_features:
+        df[col] = df[col] / (10 ** power)
+    if 'midpoint_delta' in df.columns:
+        df['midpoint_delta'] = df['midpoint_delta'] / (10 ** power)
+            
+    max_abs = df['bids_notional_0'].abs().max()
+    power = np.floor(np.log10(max_abs))
+    for col in notional_features:
+        df[col] = df[col] / (10 ** power)
 
-    midpoint_mean_np = midpoint_mean.values[:, np.newaxis]  # shape (N,1)
-    midpoint_std_np = midpoint_std.values[:, np.newaxis]    # shape (N,1)
+    if market_notional_features:
+        max_abs = df['bids_market_notional_0'].abs().max()
+        power = np.floor(np.log10(max_abs))
+        for col in market_notional_features:
+            df[col] = df[col] / (10 ** power)
+        
+    ### Z-score
+    # midpoint_mean_np = midpoint_mean.values[:, np.newaxis]
+    # midpoint_std_np = midpoint_std.values[:, np.newaxis]
     
-    df[distance_features] = (df[distance_features].values - midpoint_mean_np) / midpoint_std_np
-    df[distance_features] = pd.DataFrame(df[distance_features], columns=distance_features)
+    # df[distance_features] = (df[distance_features].values - midpoint_mean_np) / midpoint_std_np
+    # df[distance_features] = pd.DataFrame(df[distance_features], columns=distance_features)
 
-    ###
+    # rolling_mean_notional = df[notional_features].rolling(window=window_size).mean()
+    # rolling_std_notional = df[notional_features].rolling(window=window_size).std()
 
+    # df[notional_features] = (df[notional_features] - rolling_mean_notional) / rolling_std_notional
     
-    # Rolling mean/std for distance
-    # rolling_mean_distance = df[distance_features].rolling(window=window_size, min_periods=1).mean()
-    # rolling_std_distance = df[distance_features].rolling(window=window_size, min_periods=1).std()
-
-    # df[distance_features] = (df[distance_features] - rolling_mean_distance) / rolling_std_distance
-
-    # Rolling mean/std for notional
-    rolling_mean_notional = df[notional_features].rolling(window=window_size).mean()
-    rolling_std_notional = df[notional_features].rolling(window=window_size).std()
-
-    df[notional_features] = (df[notional_features] - rolling_mean_notional) / rolling_std_notional
-    
-    df = df.iloc[window_size:].reset_index(drop=True)
+    # df = df.iloc[window_size:].reset_index(drop=True)
     return df
     
 # def normalize_features(train_df, val_df, test_df):
