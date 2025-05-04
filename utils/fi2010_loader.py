@@ -2,12 +2,24 @@ import os
 import sys
 import numpy as np
 import torch
+from torch.utils.data import Subset
 
 """
 Adjusted get_item to handle different X shape - (b,1,T,feature_size) or (b,T,feature_size) depending on type of model (deepLOB vs transLOB)
 """
 
-def __get_raw__(auction, normalization, day):
+def load_fi2010(train_val_ratio, normalization, stock, train_days, test_days, T, k, mode):
+    dataset_full = Dataset_fi2010(True, normalization, stock, train_days, T, k, mode)
+    dataset_test = Dataset_fi2010(False, normalization, stock, test_days, T, k, mode)
+
+    split_idx = int(train_val_ratio * len(dataset_full))
+    dataset_train = Subset(dataset_full, list(range(0, split_idx)))
+    dataset_val   = Subset(dataset_full, list(range(split_idx, len(dataset_full))))
+
+    return dataset_train, dataset_val, dataset_test
+
+    
+def __get_raw__(training, normalization, day, k):
     """
     Handling function for loading raw FI2010 dataset
     Parameters
@@ -19,11 +31,7 @@ def __get_raw__(auction, normalization, day):
 
     root_path = 'data'
     dataset_path = 'FI-2010'
-
-    if auction:
-        path1 = "Auction"
-    else:
-        path1 = "NoAuction"
+    path1 = "NoAuction"
 
     if normalization == 'Zscore':
         tmp_path_1 = '1.'
@@ -38,7 +46,7 @@ def __get_raw__(auction, normalization, day):
     if normalization == 'Zscore':
         normalization = 'ZScore'
 
-    if day == 1:
+    if training:
         path3 = tmp_path_2 + '_' + 'Training'
         filename = f"Train_Dst_{path1}_{normalization}_CF_{str(day)}.txt"
     else:
@@ -46,7 +54,7 @@ def __get_raw__(auction, normalization, day):
         day = day - 1
         filename = f"Test_Dst_{path1}_{normalization}_CF_{str(day)}.txt"
 
-    # print(root_path, dataset_path, path1, path2, path3, filename)
+    if k==0: print("Loading: ", filename)
     file_path = os.path.join(root_path, dataset_path, path1, path2, path3, filename)
     fi2010_dataset = np.loadtxt(file_path)
     return fi2010_dataset
@@ -69,18 +77,14 @@ def __extract_stock__(raw_data, stock_idx):
     return split_data[stock_idx]
 
 
-def __split_x_y__(data, lighten):
+def __split_x_y__(data):
     """
     Extract lob data and annotated label from fi-2010 data
     Parameters
     ----------
     data: Numpy Array
     """
-    if lighten:
-        data_length = 20
-    else:
-        data_length = 40
-
+    data_length = 40
     x = data[:data_length, :].T
     y = data[-5:, :].T
     return x, y
@@ -110,35 +114,25 @@ def __data_processing__(x, y, T, k):
 
 
 class Dataset_fi2010:
-    def __init__(self, auction, normalization, stock_idx, days, T, k, lighten, mode):
+    def __init__(self, training, normalization, stock_idx, days, T, k, mode):
         """ Initialization """
-        self.auction = auction
         self.normalization = normalization
         self.days = days
         self.stock_idx = stock_idx
         self.T = T
         self.k = k
-        self.lighten = lighten
         self.mode = mode
-
-        self.x, self.y = self.__init_dataset__()
-        # if self.mode == 'deeplob':
-        #     x = torch.from_numpy(x)
-        #     self.x = torch.unsqueeze(x, 1)
-        # else:
-        #     self.x = torch.from_numpy(x)
-        # self.y = torch.from_numpy(y)
-
+        self.x, self.y = self.__init_dataset__(training)
         self.length = len(self.y)
 
-    def __init_dataset__(self):
+    def __init_dataset__(self, training):
         x_cat = np.array([])
         y_cat = np.array([])
         for stock in self.stock_idx:
             for day in self.days:
                 day_data = __extract_stock__(
-                    __get_raw__(auction=self.auction, normalization=self.normalization, day=day), stock)
-                x, y = __split_x_y__(day_data, self.lighten)
+                    __get_raw__(training=training, normalization=self.normalization, day=day, k=stock), stock)
+                x, y = __split_x_y__(day_data)
                 x_day, y_day = __data_processing__(x, y, self.T, self.k)
 
                 if len(x_cat) == 0 and len(y_cat) == 0:
@@ -157,7 +151,7 @@ class Dataset_fi2010:
     def __getitem__(self, index):
         """Generates samples of data"""
         x_tensor = torch.from_numpy(self.x[index]).float()  # shape [T, D]
-        if self.mode == 'deeplob':
+        if self.mode:
             x_tensor = x_tensor.unsqueeze(0)  # → [1, T, D]
         y_tensor = torch.tensor(self.y[index]).long()
         return x_tensor, y_tensor
@@ -175,11 +169,10 @@ def __vis_sample_lob__(normalization):
     k = 100
     day = 9
     idx = 1000
-    lighten = True
 
     day_data = __extract_stock__(
-        __get_raw__(auction=False, normalization=normalization, day=day), stock)
-    x, y = __split_x_y__(day_data, lighten)
+        __get_raw__(training, normalization=normalization, day=day, k=stock), stock)
+    x, y = __split_x_y__(day_data)
     sample_shot = np.transpose(x[0 + idx:100 + idx])
 
     image = np.zeros(sample_shot.shape)

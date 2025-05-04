@@ -1,6 +1,6 @@
 import torch
 
-def train_validate(model, train_loader, val_loader, optimizer, criterion, epochs, k, dataset_type, device):
+def train_validate(model, train_loader, val_loader, optimizer, criterion, epochs, normalization, k, dataset_type, device):
     history = {
         'train_loss': [], 'train_acc': [],
         'val_loss': [], 'val_acc': []
@@ -23,7 +23,7 @@ def train_validate(model, train_loader, val_loader, optimizer, criterion, epochs
         
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            torch.save(model.state_dict(), f'./outputs/{dataset_type}/{model.name}_{k}.pth')
+            torch.save(model.state_dict(), f'./outputs/{dataset_type}/{model.name}_{normalization}_{k}.pth')
             # print(f"*** Saved best model at epoch {epoch+1} with Val Acc {val_acc:.4f}")
 
     return history

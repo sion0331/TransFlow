@@ -2,8 +2,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_label_distributions(dataset_train, dataset_val, class_labels=(0, 1, 2), title="Label Distribution"):
-    y_train = dataset_train.y if isinstance(dataset_train.y, np.ndarray) else dataset_train.y.numpy()
-    y_val = dataset_val.y if isinstance(dataset_val.y, np.ndarray) else dataset_val.y.numpy()
+    def extract_labels(subset):
+        if hasattr(subset, 'dataset') and hasattr(subset, 'indices'):
+            return np.array([subset.dataset[i][1].item() for i in subset.indices])
+        elif hasattr(subset, 'y'):  # fallback for full Dataset
+            return subset.y.numpy() if hasattr(subset.y, 'numpy') else subset.y
+        else:
+            raise ValueError("Unsupported dataset type")
+
+    y_train = extract_labels(dataset_train)
+    y_val   = extract_labels(dataset_val)
 
     bins = np.arange(min(class_labels) - 0.5, max(class_labels) + 1.5, 1)
 
