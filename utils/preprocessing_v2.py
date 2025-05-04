@@ -36,11 +36,10 @@ def normalize_features(df, window_size=1000):
     market_notional_features = [col for col in df.columns if "market_notional" in col]
     notional_features = [col for col in df.columns if "notional" in col and col not in market_notional_features]
 
-    # df[distance_features] = df[distance_features].add(1).mul(df['midpoint'], axis=0) # Convert distance % to absolute price
+    df[distance_features] = df[distance_features].add(1).mul(df['midpoint'], axis=0) # Convert distance % to absolute price
 
     ### Dec Pre
-    max_abs = df['bids_distance_4'].abs().max()
-    power = np.floor(np.log10(max_abs))
+    power = np.ceil(np.log10(df['asks_distance_0'].max()))
     for col in distance_features:
         df[col] = df[col] / (10 ** power)
     if 'midpoint_delta' in df.columns:
@@ -53,7 +52,7 @@ def normalize_features(df, window_size=1000):
 
     if market_notional_features:
         max_abs = df['bids_market_notional_0'].abs().max()
-        power = np.floor(np.log10(max_abs))
+        power = np.ceil(np.log10(max_abs))
         for col in market_notional_features:
             df[col] = df[col] / (10 ** power)
         

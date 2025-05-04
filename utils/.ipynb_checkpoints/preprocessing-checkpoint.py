@@ -32,6 +32,13 @@ def normalize_features(df, window_size=1000):
     # Convert distance % to absolute price
     df[distance_features] = df[distance_features].add(1).mul(df['midpoint'], axis=0)
 
+    power = np.floor(np.log10(df['bids_distance_0'].max()))
+    df[distance_features] = distance_features[group] / (10 ** power)
+    print(distance_features)
+
+    # decpre_features = distance_features + notional_features
+    # df[distance_features] = df[distance_features].round(decimals)
+
     ###
     midpoint_mean = df['midpoint'].rolling(window=window_size, min_periods=1).mean()
     midpoint_std = df['midpoint'].rolling(window=window_size, min_periods=1).std()
@@ -40,8 +47,8 @@ def normalize_features(df, window_size=1000):
     midpoint_mean_np = midpoint_mean.values[:, np.newaxis]  # shape (N,1)
     midpoint_std_np = midpoint_std.values[:, np.newaxis]    # shape (N,1)
     
-    df[distance_features] = (df[distance_features].values - midpoint_mean_np) / midpoint_std_np
-    df[distance_features] = pd.DataFrame(df[distance_features], columns=distance_features)
+    # df[distance_features] = (df[distance_features].values - midpoint_mean_np) / midpoint_std_np
+    # df[distance_features] = pd.DataFrame(df[distance_features], columns=distance_features)
 
     ###
 
