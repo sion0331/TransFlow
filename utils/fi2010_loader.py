@@ -19,7 +19,7 @@ def load_fi2010(train_val_ratio, normalization, stock, train_days, test_days, T,
     return dataset_train, dataset_val, dataset_test
 
     
-def __get_raw__(training, normalization, day, k):
+def __get_raw__(training, normalization, day, k, log=True):
     """
     Handling function for loading raw FI2010 dataset
     Parameters
@@ -54,7 +54,7 @@ def __get_raw__(training, normalization, day, k):
         day = day - 1
         filename = f"Test_Dst_{path1}_{normalization}_CF_{str(day)}.txt"
 
-    if k==0: print("Loading: ", filename)
+    if k==0 and log: print("Loading: ", filename)
     file_path = os.path.join(root_path, dataset_path, path1, path2, path3, filename)
     fi2010_dataset = np.loadtxt(file_path)
     return fi2010_dataset
@@ -114,7 +114,7 @@ def __data_processing__(x, y, T, k):
 
 
 class Dataset_fi2010:
-    def __init__(self, training, normalization, stock_idx, days, T, k, mode):
+    def __init__(self, training, normalization, stock_idx, days, T, k, mode, log=True):
         """ Initialization """
         self.normalization = normalization
         self.days = days
@@ -122,16 +122,16 @@ class Dataset_fi2010:
         self.T = T
         self.k = k
         self.mode = mode
-        self.x, self.y = self.__init_dataset__(training)
+        self.x, self.y = self.__init_dataset__(training, log)
         self.length = len(self.y)
 
-    def __init_dataset__(self, training):
+    def __init_dataset__(self, training, log=True):
         x_cat = np.array([])
         y_cat = np.array([])
         for stock in self.stock_idx:
             for day in self.days:
                 day_data = __extract_stock__(
-                    __get_raw__(training=training, normalization=self.normalization, day=day, k=stock), stock)
+                    __get_raw__(training=training, normalization=self.normalization, day=day, k=stock, log=log), stock)
                 x, y = __split_x_y__(day_data)
                 x_day, y_day = __data_processing__(x, y, self.T, self.k)
 
@@ -155,8 +155,6 @@ class Dataset_fi2010:
             x_tensor = x_tensor.unsqueeze(0)  # → [1, T, D]
         y_tensor = torch.tensor(self.y[index]).long()
         return x_tensor, y_tensor
-        
-        # return self.x[index].float(), self.y[index].int()
 
     def get_midprice(self):
         return []
