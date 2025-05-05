@@ -6,6 +6,91 @@ import torch.nn.functional as F
 We apply five one-dimensional convolutional layers to the input X, regarded as a tensor of shape [100,40] (ie. an element of R100 x R40). All layers are dilated causal convolutional layers with 14 features, kernel size 2 and dilation rates 1,2,4,8 and 16 respectively. This means the filter is applied over a window larger than its length by skipping input values with a step given by the dilation rate with each layer respecting the causal order. The first layer with dilation rate 1 corresponds to standard convolution. All activation functions are ReLU.
 """
 
+
+import torch
+import torch.nn as nn
+
+class LOBFeatureExtractor2D(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=(1, 2), stride=(1, 2)),  # [B, 1, 100, 40] -> [B, 32, 100, 20]
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(16),
+            nn.Conv2d(16, 16, kernel_size=(3, 1), padding=(1, 0)),  # keep time
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(16),
+            nn.Conv2d(16, 16, kernel_size=(3, 1), padding=(1, 0)),
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(16)
+        )
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(16, 32, kernel_size=(1, 2), stride=(1, 2)),  # [B, 32, 100, 20] -> [B, 32, 100, 10]
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(32),
+            nn.Conv2d(32, 32, kernel_size=(3, 1), padding=(1, 0)),
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(32),
+            nn.Conv2d(32, 32, kernel_size=(3, 1), padding=(1, 0)),
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(32)
+        )
+
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=(1, 10)),  # [B, 32, 100, 10] -> [B, 32, 100, 1]
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(64),
+            nn.Conv2d(64, 64, kernel_size=(3, 1), padding=(1, 0)),
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(64),
+            nn.Conv2d(64, 64, kernel_size=(3, 1), padding=(1, 0)),
+            nn.LeakyReLU(0.01),
+            nn.BatchNorm2d(64)
+        )
+
+    def forward(self, x):
+        B, T, F = x.shape  # (B, 100, 40)
+        x = x.view(B, 1, T, F)  # -> (B, 1, 100, 40)
+        x = self.conv1(x)       # -> (B, 32, 100, 20)
+        x = self.conv2(x)       # -> (B, 32, 100, 10)
+        x = self.conv3(x)       # -> (B, 32, 100, 1)
+        x = x.permute(0, 2, 3, 1)  # -> (B, 100, 1, 32)
+        x = x.reshape(B, T, -1)    # -> (B, 100, 32)
+        return x
+
+
+
+
+# class LOBFeatureExtractor2D(nn.Module):
+#     def __init__(self, in_channels=1, out_channels=32):
+#         super().__init__()
+#         self.conv_block = nn.Sequential(
+#             nn.Conv2d(in_channels, out_channels, kernel_size=(1, 2), stride=(1, 2)),  # reduces feature dim only
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(out_channels),
+
+#             nn.Conv2d(out_channels, out_channels, kernel_size=(3, 1), padding=(1, 0)),  # same padding on time
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(out_channels),
+
+#             nn.Conv2d(out_channels, out_channels, kernel_size=(3, 1), padding=(1, 0)),  # same padding again
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(out_channels),
+#         )
+
+#     def forward(self, x):
+#         # Input: x shape = (B, T, F)
+#         B, T, F = x.shape
+#         x = x.view(B, 1, T, F)         # -> (B, 1, T, F)
+#         x = self.conv_block(x)        # -> (B, C, T, F') because padding preserves T
+#         x = x.permute(0, 2, 3, 1)     # -> (B, T, F', C)
+#         x = x.reshape(B, T, -1)       # flatten F' and C -> (B, T, F'*C)
+#         return x
+
+
+
 # class LOBFeatureExtractor(nn.Module):
 #     def __init__(self, in_channels, hidden_channels, kernel_size=2):
 #         super().__init__()
