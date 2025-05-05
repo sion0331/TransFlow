@@ -1,4 +1,5 @@
 import torch
+import pickle 
 
 def train_validate(model, train_loader, val_loader, optimizer, criterion, epochs, normalization, k, dataset_type, device):
     history = {
@@ -23,9 +24,13 @@ def train_validate(model, train_loader, val_loader, optimizer, criterion, epochs
         
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            torch.save(model.state_dict(), f'./outputs/{dataset_type}/{model.name}_{normalization}_{k}.pth')
+            torch.save(model.state_dict(), f'./outputs/{dataset_type}/{model.name}_{normalization}.pth')
             # print(f"*** Saved best model at epoch {epoch+1} with Val Acc {val_acc:.4f}")
 
+    f = f'./outputs/{dataset_type}/{model.name}_{normalization}.pkl'
+    with open(f, "wb") as f:
+        pickle.dump(history, f)
+        
     return history
 
 

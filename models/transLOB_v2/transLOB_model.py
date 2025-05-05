@@ -6,8 +6,10 @@ from .attention_module import LOBTransformerBlock
 
 class TransLOB(nn.Module):
 
-    def __init__(self, num_features, num_classes, hidden_channels=14, d_model=15, num_heads=3, num_transformer_blocks=2):
+    def __init__(self, num_features=40, num_classes=3, hidden_channels=14, d_model=15, num_heads=3, num_transformer_blocks=2):
         super().__init__()
+        self.name = 'translob'
+        
         self.feature_extractor = LOBFeatureExtractor(num_features, hidden_channels)
         self.layer_norm = nn.LayerNorm(hidden_channels)
         # self.layer_norm = nn.LayerNorm(hidden_channels * 2, hidden_channels*2)

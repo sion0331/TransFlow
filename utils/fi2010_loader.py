@@ -9,14 +9,19 @@ Adjusted get_item to handle different X shape - (b,1,T,feature_size) or (b,T,fea
 """
 
 def load_fi2010(train_val_ratio, normalization, stock, train_days, test_days, T, k, mode):
-    dataset_full = Dataset_fi2010(True, normalization, stock, train_days, T, k, mode)
+    dataset_train = Dataset_fi2010(True, normalization, stock, train_days, T, k, mode)
     dataset_test = Dataset_fi2010(False, normalization, stock, test_days, T, k, mode)
 
-    split_idx = int(train_val_ratio * len(dataset_full))
-    dataset_train = Subset(dataset_full, list(range(0, split_idx)))
-    dataset_val   = Subset(dataset_full, list(range(split_idx, len(dataset_full))))
+    return dataset_train, dataset_test
+    
+    # dataset_full = Dataset_fi2010(True, normalization, stock, train_days, T, k, mode)
+    # dataset_test = Dataset_fi2010(False, normalization, stock, test_days, T, k, mode)
 
-    return dataset_train, dataset_val, dataset_test
+    # split_idx = int(train_val_ratio * len(dataset_full))
+    # dataset_train = Subset(dataset_full, list(range(0, split_idx)))
+    # dataset_val   = Subset(dataset_full, list(range(split_idx, len(dataset_full))))
+
+    # return dataset_train, dataset_val, dataset_test
 
     
 def __get_raw__(training, normalization, day, k, log=True):

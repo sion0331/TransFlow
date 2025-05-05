@@ -31,7 +31,7 @@ def add_features(df):
     df = df.dropna()
     return df
     
-def normalize_features(df, window_size=1000):
+def normalize_features(df, normalization='DecPre', window_size=1000):
     distance_features = [col for col in df.columns if "distance" in col]
     market_notional_features = [col for col in df.columns if "market_notional" in col]
     notional_features = [col for col in df.columns if "notional" in col and col not in market_notional_features]
@@ -39,24 +39,31 @@ def normalize_features(df, window_size=1000):
     df[distance_features] = df[distance_features].add(1).mul(df['midpoint'], axis=0) # Convert distance % to absolute price
 
     ### Dec Pre
-    power = np.ceil(np.log10(df['asks_distance_0'].max()))
-    for col in distance_features:
-        df[col] = df[col] / (10 ** power)
-    if 'midpoint_delta' in df.columns:
-        df['midpoint_delta'] = df['midpoint_delta'] / (10 ** power)
-            
-    max_abs = df['bids_notional_0'].abs().max()
-    power = np.floor(np.log10(max_abs))
-    for col in notional_features:
-        df[col] = df[col] / (10 ** power)
-
-    if market_notional_features:
-        max_abs = df['bids_market_notional_0'].abs().max()
-        power = np.ceil(np.log10(max_abs))
-        for col in market_notional_features:
+    if normalization == 'DecPre' or normalization == 'MinMax': ##### fix minmax
+        power = np.ceil(np.log10(df['asks_distance_0'].max()))
+        for col in distance_features:
             df[col] = df[col] / (10 ** power)
-        
+        if 'midpoint_delta' in df.columns:
+            df['midpoint_delta'] = df['midpoint_delta'] / (10 ** power)
+                
+        max_abs = df['bids_notional_0'].abs().max()
+        power = np.floor(np.log10(max_abs))
+        for col in notional_features:
+            df[col] = df[col] / (10 ** power)
+    
+        if market_notional_features:
+            max_abs = df['bids_market_notional_0'].abs().max()
+            power = np.ceil(np.log10(max_abs))
+            for col in market_notional_features:
+                df[col] = df[col] / (10 ** power)
+
     ### Z-score
+    if normalization == 'Zscore':
+        df[distance_features] = (df[distance_features] - df[distance_features].mean()) / df[distance_features].std()
+        df[notional_features] = (df[notional_features] - df[notional_features].mean()) / df[notional_features].std()
+        if 'midpoint_delta' in df.columns:
+            df['midpoint_delta'] = (df['midpoint_delta'] - df['midpoint_delta'].mean()) / df['midpoint_delta'].std()
+             
     # midpoint_mean_np = midpoint_mean.values[:, np.newaxis]
     # midpoint_std_np = midpoint_std.values[:, np.newaxis]
     
