@@ -14,7 +14,7 @@ class DeepTransLOB(nn.Module):
         # self.feature_extractor = LOBFeatureExtractor2D(in_channels=1, out_channels=32) ## Added
 
 
-        self.input_projection = nn.Linear(64, d_model-1) # 640
+        self.input_projection = nn.Linear(192, d_model-1) # 640
 
                 # self.feature_extractor = LOBFeatureExtractor2D(num_features, hidden_channels)
         
