@@ -57,7 +57,7 @@ class DeepTransLOB(nn.Module):
         # print('position_encoding: ', x.shape)
 
         x = self.transformer_blocks(x) 
-        
+        # print('transformer_blocks: ', x.shape)
         # x = self.input_projection(x)              # (b, 100, 64)
         
         # x = self.transformer_block1(x)             # (b, 100, 15)

@@ -10,55 +10,162 @@ We apply five one-dimensional convolutional layers to the input X, regarded as a
 import torch
 import torch.nn as nn
 
+
+class CausalConv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, dilation=(1, 1), stride=(1, 1)):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.dilation = dilation
+        self.conv = nn.Conv2d(
+            in_channels, out_channels, kernel_size=kernel_size, stride=stride,
+            padding=(0, 0), dilation=dilation  # padding manually handled
+        )
+
+    def forward(self, x):
+        # Causal pad only on the left (time axis = 2)
+        pad_time = (self.kernel_size[0] - 1) * self.dilation[0]
+        x = F.pad(x, (0, 0, pad_time, 0))  # (pad_W_left, pad_W_right, pad_H_top, pad_H_bottom)
+        return self.conv(x)
+
+
 class LOBFeatureExtractor2D(nn.Module):
     def __init__(self):
         super().__init__()
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=(1, 2), stride=(1, 2)),  # [B, 1, 100, 40] -> [B, 32, 100, 20]
+            CausalConv2d(1, 16, kernel_size=(1, 2), stride=(1, 2)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(16),
-            nn.Conv2d(16, 16, kernel_size=(3, 1), padding=(1, 0)),  # keep time
+            CausalConv2d(16, 16, kernel_size=(3, 1)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(16),
-            nn.Conv2d(16, 16, kernel_size=(3, 1), padding=(1, 0)),
+            CausalConv2d(16, 16, kernel_size=(3, 1)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(16)
         )
 
         self.conv2 = nn.Sequential(
-            nn.Conv2d(16, 32, kernel_size=(1, 2), stride=(1, 2)),  # [B, 32, 100, 20] -> [B, 32, 100, 10]
+            CausalConv2d(16, 32, kernel_size=(1, 2), stride=(1, 2)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(32),
-            nn.Conv2d(32, 32, kernel_size=(3, 1), padding=(1, 0)),
+            CausalConv2d(32, 32, kernel_size=(3, 1)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(32),
-            nn.Conv2d(32, 32, kernel_size=(3, 1), padding=(1, 0)),
+            CausalConv2d(32, 32, kernel_size=(3, 1)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(32)
         )
 
         self.conv3 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=(1, 10)),  # [B, 32, 100, 10] -> [B, 32, 100, 1]
+            CausalConv2d(32, 64, kernel_size=(1, 10)),  # collapsing feature dim
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(64),
-            nn.Conv2d(64, 64, kernel_size=(3, 1), padding=(1, 0)),
+            CausalConv2d(64, 64, kernel_size=(3, 1)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(64),
-            nn.Conv2d(64, 64, kernel_size=(3, 1), padding=(1, 0)),
+            CausalConv2d(64, 64, kernel_size=(3, 1)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(64)
         )
 
     def forward(self, x):
-        B, T, F = x.shape  # (B, 100, 40)
-        x = x.view(B, 1, T, F)  # -> (B, 1, 100, 40)
-        x = self.conv1(x)       # -> (B, 32, 100, 20)
-        x = self.conv2(x)       # -> (B, 32, 100, 10)
-        x = self.conv3(x)       # -> (B, 32, 100, 1)
-        x = x.permute(0, 2, 3, 1)  # -> (B, 100, 1, 32)
-        x = x.reshape(B, T, -1)    # -> (B, 100, 32)
+        B, T, F = x.shape  # [B, 100, 40]
+        x = x.view(B, 1, T, F)  # [B, 1, 100, 40]
+        x = self.conv1(x)       # [B, 16, 100, 20]
+        x = self.conv2(x)       # [B, 32, 100, 10]
+        x = self.conv3(x)       # [B, 64, 100, 1]
+        x = x.permute(0, 2, 3, 1).contiguous()  # [B, 100, 1, 64]
+        x = x.view(B, T, -1)  # flatten spatial dims: [B, 100, 64]
         return x
+        
+# class LOBFeatureExtractor2D(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+
+#         self.conv1 = nn.Sequential(
+#             nn.Conv2d(1, 16, kernel_size=(1, 2), stride=(1, 2)),  # [B, 1, 100, 40] -> [B, 32, 100, 20]
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(16),
+#             nn.Conv2d(16, 16, kernel_size=(3, 1), padding=(1, 0)),  # keep time
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(16),
+#             nn.Conv2d(16, 16, kernel_size=(3, 1), padding=(1, 0)),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(16)
+#         )
+
+#         self.conv2 = nn.Sequential(
+#             nn.Conv2d(16, 32, kernel_size=(1, 2), stride=(1, 2)),  # [B, 32, 100, 20] -> [B, 32, 100, 10]
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(32),
+#             nn.Conv2d(32, 32, kernel_size=(3, 1), padding=(1, 0)),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(32),
+#             nn.Conv2d(32, 32, kernel_size=(3, 1), padding=(1, 0)),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(32)
+#         )
+
+#         self.conv3 = nn.Sequential(
+#             nn.Conv2d(32, 32, kernel_size=(1, 10)),  # [B, 32, 100, 10] -> [B, 32, 100, 1]
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(32),
+#             nn.Conv2d(32, 32, kernel_size=(3, 1), padding=(1, 0)),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(32),
+#             nn.Conv2d(32, 32, kernel_size=(3, 1), padding=(1, 0)),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(32)
+#         )
+
+#         self.inp1 = nn.Sequential(
+#             nn.Conv2d(32, 64, kernel_size=(1, 1), padding='same'),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(64),
+#             nn.Conv2d(64, 64, kernel_size=(3, 1), padding='same'),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(64)
+#         )
+
+#         self.inp2 = nn.Sequential(
+#             nn.Conv2d(32, 64, kernel_size=(1, 1), padding='same'),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(64),
+#             nn.Conv2d(64, 64, kernel_size=(5, 1), padding='same'),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(64)
+#         )
+
+#         self.inp3 = nn.Sequential(
+#             nn.MaxPool2d(kernel_size=(3, 1), stride=(1, 1), padding=(1, 0)),
+#             nn.Conv2d(32, 64, kernel_size=(1, 1), padding='same'),
+#             nn.LeakyReLU(0.01),
+#             nn.BatchNorm2d(64)
+#         )
+
+#     def forward(self, x):
+#         B, T, F = x.shape  # (B, 100, 40)
+#         x = x.view(B, 1, T, F)  # -> (B, 1, 100, 40)
+#         x = self.conv1(x)       # -> (B, 32, 100, 20)
+#         # print(x.shape)
+#         x = self.conv2(x)       # -> (B, 32, 100, 10)
+#         # print(x.shape)
+#         x = self.conv3(x)       # -> (B, 32, 100, 1)
+#         # print(x.shape)
+
+#         x1 = self.inp1(x)        # (B, 64, 100, 1)
+#         x2 = self.inp2(x)        # (B, 64, 100, 1)
+#         x3 = self.inp3(x)        # (B, 64, 100, 1)
+
+#         x = torch.cat([x1, x2, x3], dim=1)  # (B, 192, 100, 1)
+#         x = x.permute(0, 2, 3, 1).contiguous()  # (B, 100, 1, 192)
+#         x = x.view(B, T, -1)  # (B, 100, 192)
+
+
+        
+#         # x = x.permute(0, 2, 3, 1)  # -> (B, 100, 1, 32)
+#         # x = x.reshape(B, T, -1)    # -> (B, 100, 32)
+#         return x
 
 
 

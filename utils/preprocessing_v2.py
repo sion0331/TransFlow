@@ -39,7 +39,7 @@ def normalize_features(df, normalization='DecPre', window_size=1000):
     df[distance_features] = df[distance_features].add(1).mul(df['midpoint'], axis=0) # Convert distance % to absolute price
 
     ### Dec Pre
-    if normalization == 'DecPre' or normalization == 'MinMax': ##### fix minmax
+    if normalization == 'DecPre': ##### fix minmax
         power = np.ceil(np.log10(df['asks_distance_0'].max()))
         for col in distance_features:
             df[col] = df[col] / (10 ** power)
@@ -58,24 +58,19 @@ def normalize_features(df, normalization='DecPre', window_size=1000):
                 df[col] = df[col] / (10 ** power)
 
     ### Z-score
-    if normalization == 'Zscore':
+    elif normalization == 'Zscore':
         df[distance_features] = (df[distance_features] - df[distance_features].mean()) / df[distance_features].std()
         df[notional_features] = (df[notional_features] - df[notional_features].mean()) / df[notional_features].std()
         if 'midpoint_delta' in df.columns:
             df['midpoint_delta'] = (df['midpoint_delta'] - df['midpoint_delta'].mean()) / df['midpoint_delta'].std()
-             
-    # midpoint_mean_np = midpoint_mean.values[:, np.newaxis]
-    # midpoint_std_np = midpoint_std.values[:, np.newaxis]
-    
-    # df[distance_features] = (df[distance_features].values - midpoint_mean_np) / midpoint_std_np
-    # df[distance_features] = pd.DataFrame(df[distance_features], columns=distance_features)
 
-    # rolling_mean_notional = df[notional_features].rolling(window=window_size).mean()
-    # rolling_std_notional = df[notional_features].rolling(window=window_size).std()
+    ### MinMax
+    elif normalization == 'MinMax':
+        df[distance_features] = (df[distance_features] - df[distance_features].min()) / (df[distance_features].max() - df[distance_features].min())
+        df[notional_features] = (df[notional_features] - df[notional_features].min()) / (df[notional_features].max() - df[notional_features].min())
+        if 'midpoint_delta' in df.columns:
+            df['midpoint_delta'] = (df['midpoint_delta'] - df['midpoint_delta'].min()) / (df['midpoint_delta'].max() - df['midpoint_delta'].min())
 
-    # df[notional_features] = (df[notional_features] - rolling_mean_notional) / rolling_std_notional
-    
-    # df = df.iloc[window_size:].reset_index(drop=True)
     return df
     
 # def normalize_features(train_df, val_df, test_df):
@@ -98,8 +93,26 @@ def normalize_features(df, normalization='DecPre', window_size=1000):
 #     val_df[notional_features] = (val_df[notional_features] - notional_mean) / notional_std
 #     test_df[notional_features] = (test_df[notional_features] - notional_mean) / notional_std
 
-#     return train_df, val_df, test_df
+
+
+    # midpoint_mean_np = midpoint_mean.values[:, np.newaxis]
+    # midpoint_std_np = midpoint_std.values[:, np.newaxis]
     
+    # df[distance_features] = (df[distance_features].values - midpoint_mean_np) / midpoint_std_np
+    # df[distance_features] = pd.DataFrame(df[distance_features], columns=distance_features)
+
+    # rolling_mean_notional = df[notional_features].rolling(window=window_size).mean()
+    # rolling_std_notional = df[notional_features].rolling(window=window_size).std()
+
+    # df[notional_features] = (df[notional_features] - rolling_mean_notional) / rolling_std_notional
+    
+    # df = df.iloc[window_size:].reset_index(drop=True)
+#     return train_df, val_df, test_df
+
+
+
+
+       
 # def normalize_features(df):
 #     distance_features = [col for col in df.columns if "distance" in col]
 #     notional_features = [col for col in df.columns if "notional" in col]
