@@ -1,6 +1,5 @@
 """
-This code is sourced directly from:
-https://github.com/Jeonghwan-Cheon/lob-deep-learning/blob/91b8d2ef13c6c5a3d6ae1bd78c4d7bc34eb512ef/models/deeplob.py
+This code is sourced directly from: https://github.com/Jeonghwan-Cheon/lob-deep-learning
 
 No modifications were made.
 """
