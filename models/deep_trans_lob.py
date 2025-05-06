@@ -1,5 +1,11 @@
 """
-We apply five one-dimensional convolutional layers to the input X, regarded as a tensor of shape [100,40] (ie. an element of R100 x R40). All layers are dilated causal convolutional layers with 14 features, kernel size 2 and dilation rates 1,2,4,8 and 16 respectively. This means the filter is applied over a window larger than its length by skipping input values with a step given by the dilation rate with each layer respecting the causal order. The first layer with dilation rate 1 corresponds to standard convolution. All activation functions are ReLU.
+Custom PyTorch implementation of DeepTransLOB – a hybrid model combining 2D Causal Convolutions and Transformer layers (based on https://github.com/jwallbridge/translob)
+
+Key modifications:
+- Rewritten in PyTorch from the original TensorFlow version
+- CausalConv2d: Manually applies causal padding along the time axis for 2D convolutions
+- LOBFeatureExtractor2D: Applies dilated causal convolutions to extract spatial-temporal features
+- LOBTransformerBlock: Transformer block with causal attention masking and dropout
 """
 
 import torch
@@ -30,7 +36,7 @@ class LOBFeatureExtractor2D(nn.Module):
 
         dim = 64
         self.conv1 = nn.Sequential(
-            CausalConv2d(1, dim, kernel_size=(1, 2), stride=(1, 2)),   # (B, 1, 100, 40) -> (B, 16, 100, 20)
+            CausalConv2d(1, dim, kernel_size=(1, 2), stride=(1, 2)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(64),
             CausalConv2d(dim, dim, kernel_size=(3, 1), dilation=(1, 1)),
@@ -42,7 +48,7 @@ class LOBFeatureExtractor2D(nn.Module):
         )
 
         self.conv2 = nn.Sequential(
-            CausalConv2d(dim, dim, kernel_size=(1, 2), stride=(1, 2)),  # -> (B, 64, 100, 10)
+            CausalConv2d(dim, dim, kernel_size=(1, 2), stride=(1, 2)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(dim),
             CausalConv2d(dim, dim, kernel_size=(3, 1), dilation=(4, 1)),
@@ -54,19 +60,19 @@ class LOBFeatureExtractor2D(nn.Module):
         )
         
         self.conv3 = nn.Sequential(
-            CausalConv2d(dim, dim, kernel_size=(1, 10), stride=(1, 10)),  # -> (B, 32, 100, 1)
+            CausalConv2d(dim, dim, kernel_size=(1, 10), stride=(1, 10)),
             nn.LeakyReLU(0.01),
             nn.BatchNorm2d(dim),
         )
 
     def forward(self, x):
-        B, T, F = x.shape  # [B, 100, 40]
-        x = x.view(B, 1, T, F)  # [B, 1, 100, 40]
-        x = self.conv1(x)       # [B, 16, 100, 20]
-        x = self.conv2(x)       # [B, 32, 100, 10]
-        x = self.conv3(x)       # [B, 64, 100, 1]
+        B, T, F = x.shape                       # [B, 100, 40]
+        x = x.view(B, 1, T, F)                  # [B, 1, 100, 40]
+        x = self.conv1(x)                       # [B, 16, 100, 20]
+        x = self.conv2(x)                       # [B, 32, 100, 10]
+        x = self.conv3(x)                       # [B, 64, 100, 1]
         x = x.permute(0, 2, 3, 1).contiguous()  # [B, 100, 1, 64]
-        x = x.view(B, T, -1)  # flatten spatial dims: [B, 100, 64]
+        x = x.view(B, T, -1)                    # [B, 100, 64]
         return x
         
 

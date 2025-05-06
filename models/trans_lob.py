@@ -1,7 +1,12 @@
 """
-We apply five one-dimensional convolutional layers to the input X, regarded as a tensor of shape [100,40] (ie. an element of R100 x R40). All layers are dilated causal convolutional layers with 14 features, kernel size 2 and dilation rates 1,2,4,8 and 16 respectively. This means the filter is applied over a window larger than its length by skipping input values with a step given by the dilation rate with each layer respecting the causal order. The first layer with dilation rate 1 corresponds to standard convolution. All activation functions are ReLU.
-"""
+PyTorch implementation of TransLOB (based on https://github.com/jwallbridge/translob)
 
+Key modifications:
+- Rewritten in PyTorch from the original TensorFlow version
+- Manually handle causal padding for Conv1D layers
+- Explicit causal attention mask in transformer blocks
+- Modular structure with separate feature extractor, positional encoding, and transformer layers
+"""
 
 import torch
 import torch.nn as nn
@@ -110,9 +115,9 @@ class TransLOB(nn.Module):
         x = self.feature_extractor(x)             # (b, 100, 14)
         x = self.layer_norm(x)                    # (b, 100, 14)
         x = self.position_encoding(x)             # (b, 100, 15)
-        x = self.transformer_block1(x)             # (b, 100, 15)
-        x = self.transformer_block2(x)             # (b, 100, 15)
-        x = x[:, -1, :]                           # (b, 64)
+        x = self.transformer_block1(x)            # (b, 100, 15)
+        x = self.transformer_block2(x)            # (b, 100, 15)
+        x = x[:, -1, :]                           # (b, 15)
         x = self.fc_out(x)                        # (b, 3)
         return x
         
