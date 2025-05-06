@@ -1,18 +1,12 @@
-"""
-This code is sourced directly from:
-https://github.com/Jeonghwan-Cheon/lob-deep-learning/blob/91b8d2ef13c6c5a3d6ae1bd78c4d7bc34eb512ef/models/deeplob.py
-No modifications were made.
-"""
-
 import torch
 import torch.nn as nn
 
 
-class Deeplob(nn.Module):
+class DeepLOB(nn.Module):
     def __init__(self):
         super().__init__()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.name = 'deeplob'
+        self.name = 'DeepLOB'
 
         # convolution blocks
         self.conv1 = nn.Sequential(

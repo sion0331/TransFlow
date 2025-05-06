@@ -1,28 +1,28 @@
+"""
+Source: Adapted from Jeonghwan-Cheon's DeepLOB repository:
+https://github.com/Jeonghwan-Cheon/lob-deep-learning/blob/91b8d2ef13c6c5a3d6ae1bd78c4d7bc34eb512ef/loaders/fi2010_loader.py
+
+Description:
+This module provides functionality for loading and preprocessing the FI-2010 Limit Order Book dataset.
+It includes logic for extracting individual stocks, normalizing data, generating horizon-based labels, and packaging data into PyTorch-compatible datasets.
+
+Modifications:
+- Adjusted `__getitem__` to support both (B, 1, T, F) and (B, T, F) input formats for DeepLOB and TransLOB compatibility.
+- Logging details
+"""
+
 import os
 import sys
 import numpy as np
 import torch
 from torch.utils.data import Subset
 
-"""
-Adjusted get_item to handle different X shape - (b,1,T,feature_size) or (b,T,feature_size) depending on type of model (deepLOB vs transLOB)
-"""
-
 def load_fi2010(train_val_ratio, normalization, stock, train_days, test_days, T, k, mode):
-    dataset_train = Dataset_fi2010(True, normalization, stock, train_days, T, k, mode)
-    dataset_test = Dataset_fi2010(False, normalization, stock, test_days, T, k, mode)
+    dataset_train = Dataset_fi2010(True, normalization, stock, train_days, T, k, mode, False)
+    dataset_test = Dataset_fi2010(False, normalization, stock, test_days, T, k, mode, False)
 
     return dataset_train, dataset_test
     
-    # dataset_full = Dataset_fi2010(True, normalization, stock, train_days, T, k, mode)
-    # dataset_test = Dataset_fi2010(False, normalization, stock, test_days, T, k, mode)
-
-    # split_idx = int(train_val_ratio * len(dataset_full))
-    # dataset_train = Subset(dataset_full, list(range(0, split_idx)))
-    # dataset_val   = Subset(dataset_full, list(range(split_idx, len(dataset_full))))
-
-    # return dataset_train, dataset_val, dataset_test
-
     
 def __get_raw__(training, normalization, day, k, log=True):
     """
@@ -47,19 +47,21 @@ def __get_raw__(training, normalization, day, k, log=True):
 
     tmp_path_2 = f"{path1}_{normalization}"
     path2 = f"{tmp_path_1}{tmp_path_2}"
-    
+
     if normalization == 'Zscore':
         normalization = 'ZScore'
 
     if training:
         path3 = tmp_path_2 + '_' + 'Training'
-        filename = f"Train_Dst_{path1}_{normalization}_CF_{str(day)}.txt"
+        filename = f"Train_Dst_{path1}_{normalization}_CF_{str(day)}"
+        filename = filename + '.txt'
     else:
         path3 = tmp_path_2 + '_' + 'Testing'
         day = day - 1
-        filename = f"Test_Dst_{path1}_{normalization}_CF_{str(day)}.txt"
-
-    if k==0 and log: print("Loading: ", filename)
+        filename = f"Test_Dst_{path1}_{normalization}_CF_{str(day)}"
+        filename = filename + '.txt'
+    
+    if log: print("Loading: ", filename)
     file_path = os.path.join(root_path, dataset_path, path1, path2, path3, filename)
     fi2010_dataset = np.loadtxt(file_path)
     return fi2010_dataset
@@ -119,7 +121,7 @@ def __data_processing__(x, y, T, k):
 
 
 class Dataset_fi2010:
-    def __init__(self, training, normalization, stock_idx, days, T, k, mode, log=True):
+    def __init__(self, training, normalization, stock_idx, days, T, k, mode, log=False):
         """ Initialization """
         self.normalization = normalization
         self.days = days
@@ -163,29 +165,3 @@ class Dataset_fi2010:
 
     def get_midprice(self):
         return []
-
-
-def __vis_sample_lob__(normalization):
-    import matplotlib.pyplot as plt
-
-    stock = 0
-    k = 100
-    day = 9
-    idx = 1000
-
-    day_data = __extract_stock__(
-        __get_raw__(training, normalization=normalization, day=day, k=stock), stock)
-    x, y = __split_x_y__(day_data)
-    sample_shot = np.transpose(x[0 + idx:100 + idx])
-
-    image = np.zeros(sample_shot.shape)
-    for i in range(5):
-        image[14 - i , :] = sample_shot[4 * i, :]
-        image[4 - i, :] = sample_shot[4 * i + 1, :]
-        image[15 + i, :] = sample_shot[4 * i + 2, :]
-        image[5 + i, :] = sample_shot[4 * i + 3, :]
-
-    plt.imshow(image)
-    plt.title('Sample LOB from FI-2010 dataset')
-    plt.colorbar()
-    plt.show()
