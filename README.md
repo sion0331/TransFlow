@@ -20,7 +20,7 @@ This repository contains code to replicate and extend the DeepLOB and TransLOB a
 4. View Results
 - Use main_results.ipynb to visualize and compare model performance
 
-* Quick Mode (MINI = True)
+**Quick Mode (`MINI = True`)**  
 All notebooks support a MINI flag for quick testing on subset data
 - train_fi2010.ipynb: Uses 1 day of FI-2010 data; skips saving model/history
 - train_crypto.ipynb: Uses trimmed BTC_1sec_MINI.csv; skips saving model/history
