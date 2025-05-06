@@ -1,5 +1,4 @@
 """
-Author: Sion Chun
 Description: Data loader for high-frequency cryptocurrency limit order book data. 
 Includes feature preprocessing, label generation, normalization, and dataset wrapping for PyTorch models.
 

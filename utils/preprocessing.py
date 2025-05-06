@@ -1,5 +1,4 @@
 """
-Author: Sion Chun
 Description: Preprocessing utilities for the crypto LOB dataset including:
 - windowed feature creation
 - label generation for classification tasks

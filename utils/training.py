@@ -1,5 +1,4 @@
 """
-Author: Sion Chun
 Description: Training and validation utilities for model training, including performance tracking and checkpoint saving.
 
 This is original code developed for the COMS6998 Deep Learning Final Project.

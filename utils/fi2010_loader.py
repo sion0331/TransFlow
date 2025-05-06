@@ -1,12 +1,11 @@
 """
-Source: Adapted from Jeonghwan-Cheon's DeepLOB repository:
-https://github.com/Jeonghwan-Cheon/lob-deep-learning/blob/91b8d2ef13c6c5a3d6ae1bd78c4d7bc34eb512ef/loaders/fi2010_loader.py
+Source: Adapted from Jeonghwan-Cheon's DeepLOB repository: https://github.com/Jeonghwan-Cheon/lob-deep-learning
 
 Description:
 This module provides functionality for loading and preprocessing the FI-2010 Limit Order Book dataset.
 It includes logic for extracting individual stocks, normalizing data, generating horizon-based labels, and packaging data into PyTorch-compatible datasets.
 
-Modifications:
+Key Modifications:
 - Adjusted `__getitem__` to support both (B, 1, T, F) and (B, T, F) input formats for DeepLOB and TransLOB compatibility.
 - Logging details
 """

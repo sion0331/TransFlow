@@ -1,5 +1,4 @@
 """
-Author: Sion Chun
 Description: Visualization utilities for inspecting LOB dataset and model performance.
 - plot_label_distributions: Show distribution of class labels in training and validation datasets.
 - plot_training_history: Plot loss and accuracy curves over training epochs.
