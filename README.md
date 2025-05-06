@@ -5,7 +5,7 @@ This repository contains code to replicate and extend the DeepLOB and TransLOB a
 - pip install -r requirements.txt
 
 2. Prepare Datasets
-- Subsets of the original datasets (with _MINI suffix) are already included in this repo for quick testing
+- Subsets of the original datasets are already included in this repo for quick testing
 - FI-2010: Download the full dataset and place it under ./data/FI-2010/
     - https://etsin.fairdata.fi/dataset/73eb48d7-4dbc-4a10-a52a-da745b47a649
 - Crypto (BTC/USD): Download and place BTC_1sec.csv under ./data/crypto/
@@ -14,12 +14,17 @@ This repository contains code to replicate and extend the DeepLOB and TransLOB a
 3. Train Models
 - FI-2010: train_fi2010.ipynb
 - Crypto LOB: train_crypto.ipynb
-- Model weights will be saved as .pth files under ./outputs
-- Training history and validation metrics will be saved as .pkl files under ./outputs
+- Model weights are be saved as .pth files under ./outputs
+- Training history and validation metrics ared saved as .pkl files under ./outputs
 
 4. View Results
-- main_results.ipynb
+- Use main_results.ipynb to visualize and compare model performance
 
+* Quick Mode (MINI = True)
+All notebooks support a MINI flag for quick testing on subset data
+- train_fi2010.ipynb: Uses 1 day of FI-2010 data; skips saving model/history
+- train_crypto.ipynb: Uses trimmed BTC_1sec_MINI.csv; skips saving model/history
+- main_results.ipynb: Evaluates on corresponding small test sets
 
 ## Project Structure
 .
