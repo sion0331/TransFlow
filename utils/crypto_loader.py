@@ -35,19 +35,7 @@ def load_crypto(data_path, levels, horizon, target_horizon, label_alpha, normali
 
     X_windows, y_labels = create_windows(X, y, T)
 
-    ###
-    hold = 0.05
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_windows[:int(len(X_windows)*(1-hold))], y_labels[:int(len(X_windows)*(1-hold))], 
-        test_size=25/95, random_state=42, shuffle=True
-    )
-    X_val = np.concatenate([X_val, X_windows[-int(len(X_windows)*hold):]], axis=0)
-    y_val = np.concatenate([y_val, y_labels[-int(len(X_windows)*hold):]], axis=0)
-    ### 
-
-    # X_train, X_val, y_train, y_val = train_test_split(
-    #     X_windows, y_labels, test_size=test_ratio, random_state=42, shuffle=False
-    # )
+    X_train, X_val, y_train, y_val = train_test_split(X_windows, y_labels, test_size=test_ratio, random_state=42, shuffle=False)
     
     if log:
         print(f"Train shape: {X_train.shape}, {y_train.shape}")
